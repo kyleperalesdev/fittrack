@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(New-Item -ItemType Directory -Force -Path \"C:\\\\Users\\\\kylep\\\\Documents\\\\Web-Projects\\\\fitness-app\\\\client\\\\src\\\\api\")",
+      "PowerShell(New-Item -ItemType Directory -Force -Path \"C:\\\\Users\\\\kylep\\\\Documents\\\\Web-Projects\\\\fitness-app\\\\client\\\\src\\\\contexts\")",
+      "PowerShell(New-Item -ItemType Directory -Force -Path \"C:\\\\Users\\\\kylep\\\\Documents\\\\Web-Projects\\\\fitness-app\\\\client\\\\src\\\\pages\")",
+      "PowerShell(New-Item -ItemType Directory -Force -Path \"C:\\\\Users\\\\kylep\\\\Documents\\\\Web-Projects\\\\fitness-app\\\\client\\\\src\\\\components\")",
+      "PowerShell(New-Item -ItemType Directory -Force -Path \"C:\\\\Users\\\\kylep\\\\Documents\\\\Web-Projects\\\\fitness-app\\\\client\\\\src\\\\hooks\")",
+      "PowerShell(winget --version 2>&1)",
+      "PowerShell(docker --version 2>&1)",
+      "PowerShell(choco --version 2>&1)",
+      "PowerShell(winget install MongoDB.Server --accept-package-agreements --accept-source-agreements 2>&1)",
+      "PowerShell(net start MongoDB 2>&1)",
+      "Read(//c/Program Files/MongoDB/**)",
+      "PowerShell(winget list MongoDB 2>&1)",
+      "PowerShell(cd \"C:\\\\Users\\\\kylep\\\\Documents\\\\Web-Projects\\\\fitness-app\\\\server\"; $job = Start-Job { node \"C:\\\\Users\\\\kylep\\\\Documents\\\\Web-Projects\\\\fitness-app\\\\server\\\\server.js\" }; Start-Sleep 3; $output = Receive-Job $job; $output; Stop-Job $job; Remove-Job $job)"
+    ]
+  }
+}
