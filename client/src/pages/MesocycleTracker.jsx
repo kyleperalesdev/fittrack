@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import api from '../api/axios';
 import { SPLIT_LABELS } from '../utils/mesocycleConstants';
+import ProgressCharts from '../components/ProgressCharts';
 
 const DAY_NAMES = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
@@ -152,6 +153,9 @@ export default function MesocycleTracker() {
           </p>
         )}
       </section>
+
+      {/* ── Progress charts ── */}
+      <ProgressCharts sessions={sessions} mesocycle={mesocycle} />
     </div>
   );
 }
