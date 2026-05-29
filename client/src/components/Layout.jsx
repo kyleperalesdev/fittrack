@@ -1,3 +1,4 @@
+import { useState, useRef, useEffect } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -9,11 +10,24 @@ const navItems = [
 export default function Layout({ children }) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const [profileOpen, setProfileOpen] = useState(false);
+  const profileRef = useRef(null);
 
   function handleLogout() {
     logout();
     navigate('/login');
   }
+
+  // Close profile menu when clicking outside
+  useEffect(() => {
+    function onPointerDown(e) {
+      if (profileRef.current && !profileRef.current.contains(e.target)) {
+        setProfileOpen(false);
+      }
+    }
+    document.addEventListener('pointerdown', onPointerDown);
+    return () => document.removeEventListener('pointerdown', onPointerDown);
+  }, []);
 
   return (
     <div className="flex min-h-screen">
@@ -42,10 +56,33 @@ export default function Layout({ children }) {
             </NavLink>
           ))}
         </nav>
-        <div className="px-3 py-4 border-t border-gray-800">
-          <button onClick={handleLogout} className="btn-secondary w-full text-xs">
-            Sign Out
+
+        {/* Desktop profile menu */}
+        <div ref={profileRef} className="relative px-3 py-4 border-t border-gray-800">
+          <button
+            onClick={() => setProfileOpen((o) => !o)}
+            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-gray-400 hover:bg-gray-800 hover:text-gray-100 transition-colors"
+          >
+            <span className="w-7 h-7 rounded-full bg-brand-700 text-brand-200 text-xs font-bold flex items-center justify-center shrink-0">
+              {user?.name?.[0]?.toUpperCase() ?? '?'}
+            </span>
+            <span className="flex-1 text-left truncate">{user?.name}</span>
+            <span className="text-xs text-gray-600">{profileOpen ? '▲' : '▼'}</span>
           </button>
+
+          {profileOpen && (
+            <div className="absolute bottom-full left-3 right-3 mb-1 bg-gray-800 border border-gray-700 rounded-lg shadow-xl overflow-hidden">
+              <div className="px-3 py-2 border-b border-gray-700">
+                <p className="text-xs text-gray-500 truncate">{user?.email}</p>
+              </div>
+              <button
+                onClick={handleLogout}
+                className="w-full text-left px-3 py-2.5 text-sm text-red-400 hover:bg-gray-700 transition-colors"
+              >
+                Sign Out
+              </button>
+            </div>
+          )}
         </div>
       </aside>
 
@@ -73,13 +110,36 @@ export default function Layout({ children }) {
             <span>{label}</span>
           </NavLink>
         ))}
-        <button
-          onClick={handleLogout}
-          className="flex-1 flex flex-col items-center justify-center gap-0.5 text-xs font-medium text-gray-500 hover:text-gray-300"
-        >
-          <span className="text-lg leading-none">↩</span>
-          <span>Sign Out</span>
-        </button>
+
+        {/* Mobile profile tab */}
+        <div ref={profileOpen ? profileRef : null} className="relative flex-1">
+          <button
+            onClick={() => setProfileOpen((o) => !o)}
+            className={`w-full h-full flex flex-col items-center justify-center gap-0.5 text-xs font-medium transition-colors ${
+              profileOpen ? 'text-brand-400' : 'text-gray-500 hover:text-gray-300'
+            }`}
+          >
+            <span className="w-5 h-5 rounded-full bg-brand-700 text-brand-200 text-[10px] font-bold flex items-center justify-center">
+              {user?.name?.[0]?.toUpperCase() ?? '?'}
+            </span>
+            <span>Profile</span>
+          </button>
+
+          {profileOpen && (
+            <div className="absolute bottom-full right-0 mb-2 w-48 bg-gray-800 border border-gray-700 rounded-xl shadow-2xl overflow-hidden">
+              <div className="px-3 py-2.5 border-b border-gray-700">
+                <p className="text-sm font-medium text-gray-200 truncate">{user?.name}</p>
+                <p className="text-xs text-gray-500 truncate mt-0.5">{user?.email}</p>
+              </div>
+              <button
+                onClick={handleLogout}
+                className="w-full text-left px-3 py-2.5 text-sm text-red-400 hover:bg-gray-700 transition-colors"
+              >
+                Sign Out
+              </button>
+            </div>
+          )}
+        </div>
       </nav>
     </div>
   );
