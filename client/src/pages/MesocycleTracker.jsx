@@ -27,6 +27,8 @@ export default function MesocycleTracker() {
   const [loading, setLoading] = useState(true);
   const [selectedWeek, setSelectedWeek] = useState(1);
   const [duplicating, setDuplicating] = useState(false);
+  const [completing, setCompleting] = useState(false);
+  const [showCompleteConfirm, setShowCompleteConfirm] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -77,6 +79,19 @@ export default function MesocycleTracker() {
     }
   }
 
+  async function completeCycle() {
+    setCompleting(true);
+    try {
+      await api.put(`/mesocycles/${id}`, { status: 'completed' });
+      setMesocycle((prev) => ({ ...prev, status: 'completed' }));
+      setShowCompleteConfirm(false);
+    } catch {
+      // leave modal open so user can retry
+    } finally {
+      setCompleting(false);
+    }
+  }
+
   return (
     <div className="space-y-8">
       {/* ── Header ── */}
@@ -90,10 +105,18 @@ export default function MesocycleTracker() {
             )}
           </p>
         </div>
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
           <Link to={`/mesocycles/${id}/edit`} className="btn-secondary">
             Edit Plan
           </Link>
+          {!isCompleted && (
+            <button
+              onClick={() => setShowCompleteConfirm(true)}
+              className="btn-secondary"
+            >
+              ✓ Complete Cycle
+            </button>
+          )}
           <button
             onClick={duplicateMeso}
             disabled={duplicating}
@@ -104,6 +127,34 @@ export default function MesocycleTracker() {
           </button>
         </div>
       </div>
+
+      {/* ── Complete cycle confirmation modal ── */}
+      {showCompleteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+          <div className="bg-gray-900 border border-gray-700 rounded-2xl p-6 max-w-sm w-full space-y-4 shadow-2xl">
+            <h3 className="font-bold text-gray-100 text-lg">Complete this cycle?</h3>
+            <p className="text-sm text-gray-400 leading-relaxed">
+              This will lock all sessions — workouts can no longer be logged or edited.
+              Your progress will be preserved as history and the cycle can be duplicated to start a new block.
+            </p>
+            <div className="flex gap-3 pt-1">
+              <button
+                onClick={() => setShowCompleteConfirm(false)}
+                className="btn-secondary flex-1"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={completeCycle}
+                disabled={completing}
+                className="btn-primary flex-1"
+              >
+                {completing ? 'Saving…' : 'Complete Cycle'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Completed banner ── */}
       {isCompleted && (

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -87,25 +88,59 @@ function SortableExercise({ id, exercise, dayIndex, exIdx, onRemove, onUpdate })
 }
 
 export default function DayColumn({ day, onRemoveExercise, onUpdateExercise, onToggleRest }) {
-  const { setNodeRef, isOver } = useDroppable({ id: `day-${day.dayIndex}` });
+  const { setNodeRef, isOver } = useDroppable({ id: `day-${day.dayIndex}`, disabled: day.isRestDay });
+  const [confirmRest, setConfirmRest] = useState(false);
 
   const sortableIds = day.exercises.map((ex) => ex._clientId);
+
+  function handleToggleRest() {
+    // Only confirm when switching a day that has exercises to rest
+    if (!day.isRestDay && day.exercises.length > 0) {
+      setConfirmRest(true);
+    } else {
+      onToggleRest(day.dayIndex);
+    }
+  }
+
+  function confirmToRest() {
+    onToggleRest(day.dayIndex);
+    setConfirmRest(false);
+  }
 
   return (
     <div className="flex flex-col min-w-[220px] max-w-[280px] w-full">
       {/* Day header */}
-      <div className="flex items-center justify-between mb-2">
+      <div className="flex items-center justify-between mb-2 min-h-[36px]">
         <div>
           <span className="text-xs text-gray-500">{DAY_NAMES[day.dayIndex]}</span>
           <p className="font-semibold text-sm text-gray-200 leading-tight">{day.label}</p>
         </div>
-        <button
-          onClick={() => onToggleRest(day.dayIndex)}
-          title={day.isRestDay ? 'Mark as training day' : 'Mark as rest day'}
-          className="text-xs text-gray-600 hover:text-gray-400 px-1"
-        >
-          {day.isRestDay ? '▶' : '⏸'}
-        </button>
+
+        {confirmRest ? (
+          <div className="flex items-center gap-1.5 text-xs">
+            <span className="text-gray-400">Clear {day.exercises.length} exercise{day.exercises.length !== 1 ? 's' : ''}?</span>
+            <button
+              onClick={confirmToRest}
+              className="font-semibold text-red-400 hover:text-red-300 transition-colors"
+            >
+              Yes
+            </button>
+            <button
+              onClick={() => setConfirmRest(false)}
+              className="text-gray-500 hover:text-gray-300 transition-colors"
+            >
+              No
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={handleToggleRest}
+            title={day.isRestDay ? 'Mark as training day' : 'Mark as rest day'}
+            className="text-xs text-gray-600 hover:text-gray-400 px-1 transition-colors"
+          >
+            {day.isRestDay ? '▶' : '⏸'}
+          </button>
+        )}
       </div>
 
       {/* Drop zone */}

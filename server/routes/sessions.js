@@ -30,6 +30,9 @@ router.post('/', async (req, res, next) => {
     }
     const meso = await Mesocycle.findOne({ _id: mesocycle, user: req.user._id });
     if (!meso) return res.status(404).json({ message: 'Mesocycle not found' });
+    if (meso.status === 'completed') {
+      return res.status(403).json({ message: 'This mesocycle is completed and cannot be modified.' });
+    }
 
     const session = await WorkoutSession.create({
       user: req.user._id,
@@ -48,6 +51,10 @@ router.put('/:id', async (req, res, next) => {
   try {
     const session = await WorkoutSession.findOne({ _id: req.params.id, user: req.user._id });
     if (!session) return res.status(404).json({ message: 'Session not found' });
+    const meso = await Mesocycle.findOne({ _id: session.mesocycle, user: req.user._id });
+    if (meso?.status === 'completed') {
+      return res.status(403).json({ message: 'This mesocycle is completed and cannot be modified.' });
+    }
 
     const { exercises, completed } = req.body;
     if (exercises !== undefined) session.exercises = exercises;

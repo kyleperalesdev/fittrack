@@ -35,6 +35,8 @@ export default function MesocycleBuilder() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [step, setStep] = useState(isEdit ? 2 : 1);
+  const [status, setStatus] = useState('planned');
+  const [startDate, setStartDate] = useState('');
 
   const builder = useMesocycleBuilder();
   const {
@@ -79,6 +81,8 @@ export default function MesocycleBuilder() {
         setSplitType(m.splitType);
         setWeeks(m.weeks);
         setNotes(m.notes || '');
+        setStatus(m.status || 'planned');
+        setStartDate(m.startDate ? m.startDate.split('T')[0] : '');
         setWeekTemplate(addClientIds(m.weekTemplate ?? []));
         setStep(2);
       })
@@ -102,6 +106,8 @@ export default function MesocycleBuilder() {
     // Dropped from sidebar onto a day column
     if (active.id.toString().startsWith('exercise-') && overId.startsWith('day-')) {
       const dayIndex = parseInt(overId.replace('day-', ''));
+      const targetDay = weekTemplate.find((d) => d.dayIndex === dayIndex);
+      if (!targetDay || targetDay.isRestDay) return;
       const exercise = active.data.current.exercise;
       addExerciseToDay(dayIndex, exercise);
       return;
@@ -131,7 +137,11 @@ export default function MesocycleBuilder() {
     setSaving(true);
     setError('');
     try {
-      const payload = toPayload();
+      const payload = {
+        ...toPayload(),
+        status,
+        startDate: startDate || null,
+      };
       if (isEdit) {
         await api.put(`/mesocycles/${id}`, payload);
       } else {
@@ -218,6 +228,48 @@ export default function MesocycleBuilder() {
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Goals, deload plan, etc."
             />
+          </div>
+
+          <div>
+            <label className="label">Status</label>
+            <div className="flex gap-2">
+              {[
+                { id: 'planned',   label: 'Planned',   active: 'bg-blue-900/40 border-blue-600 text-blue-200' },
+                { id: 'active',    label: 'Active',    active: 'bg-brand-900/40 border-brand-600 text-brand-200' },
+                { id: 'completed', label: 'Completed', active: 'bg-gray-700/60 border-gray-500 text-gray-200' },
+              ].map((s) => (
+                <button
+                  key={s.id}
+                  type="button"
+                  onClick={() => setStatus(s.id)}
+                  className={`flex-1 py-2 rounded-lg text-sm font-semibold border transition-colors ${
+                    status === s.id
+                      ? s.active
+                      : 'bg-gray-800 border-gray-700 text-gray-400 hover:border-gray-500'
+                  }`}
+                >
+                  {s.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <label className="label">
+              Start Date
+              <span className="ml-1 text-gray-600 font-normal">(optional)</span>
+            </label>
+            <input
+              type="date"
+              className="input"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+            />
+            {status === 'active' && !startDate && (
+              <p className="text-xs text-yellow-500 mt-1">
+                Setting a start date lets the app track your current week.
+              </p>
+            )}
           </div>
 
           <div className="flex gap-2 pt-2">

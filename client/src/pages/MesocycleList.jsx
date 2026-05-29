@@ -80,8 +80,11 @@ export default function MesocycleList() {
                 </span>
               </div>
               <div className="flex items-center gap-2 mt-auto">
-                <Link to={`/mesocycles/${m._id}`} className="btn-primary flex-1 text-center">
-                  Train
+                <Link
+                  to={`/mesocycles/${m._id}`}
+                  className={`flex-1 text-center ${m.status === 'completed' ? 'btn-secondary' : 'btn-primary'}`}
+                >
+                  {m.status === 'completed' ? 'View' : 'Train'}
                 </Link>
                 <Link to={`/mesocycles/${m._id}/edit`} className="btn-secondary px-3 text-center">
                   Edit

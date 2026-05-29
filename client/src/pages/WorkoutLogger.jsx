@@ -247,7 +247,8 @@ export default function WorkoutLogger() {
     );
   }
 
-  const isCompleted = existingSession?.completed === true;
+  const isSessionCompleted = existingSession?.completed === true;
+  const isMesoCompleted = mesocycle?.status === 'completed';
 
   // ── Full-page layout ──────────────────────────────────────────────────────
 
@@ -272,12 +273,25 @@ export default function WorkoutLogger() {
           </h2>
         </div>
 
-        {isCompleted && (
+        {isMesoCompleted ? (
+          <span className="shrink-0 text-xs font-semibold px-2.5 py-1 rounded-full bg-gray-700/60 text-gray-300 border border-gray-600">
+            History
+          </span>
+        ) : isSessionCompleted && (
           <span className="shrink-0 text-xs font-semibold px-2.5 py-1 rounded-full bg-brand-900/50 text-brand-300 border border-brand-700">
             Completed
           </span>
         )}
       </div>
+
+      {/* Read-only history banner */}
+      {isMesoCompleted && (
+        <div className="shrink-0 px-4 md:px-6 py-2.5 bg-gray-800/50 border-b border-gray-800 flex items-center gap-2">
+          <span className="text-xs text-gray-400">
+            This cycle is complete — sessions are locked and preserved as history.
+          </span>
+        </div>
+      )}
 
       {/* Scrollable body */}
       <div className="flex-1 overflow-y-auto px-4 md:px-6 py-5 md:py-6 space-y-10">
@@ -363,95 +377,134 @@ export default function WorkoutLogger() {
               {/* Set rows */}
               <div className="space-y-2">
                 {exLog.sets.map((set, setIdx) => (
-                  <div
-                    key={setIdx}
-                    className={`grid grid-cols-[2rem_1fr_1fr_1fr_2.5rem] sm:grid-cols-[3rem_1fr_1fr_1fr_3rem] gap-2 sm:gap-3 items-center rounded-lg px-1 py-1 transition-colors ${
-                      set.completed ? 'bg-brand-900/20' : ''
-                    }`}
-                  >
-                    <span className="text-sm text-gray-400 text-center font-medium">
-                      {setIdx + 1}
-                    </span>
-
-                    <input
-                      type="number"
-                      inputMode="decimal"
-                      min="0"
-                      step="2.5"
-                      value={set.weight ?? ''}
-                      onChange={(e) =>
-                        updateSet(exIdx, setIdx, {
-                          weight: e.target.value ? Number(e.target.value) : null,
-                        })
-                      }
-                      placeholder="kg"
-                      className="input py-2.5 text-center text-sm"
-                    />
-
-                    <input
-                      type="number"
-                      inputMode="numeric"
-                      min="1"
-                      max="100"
-                      value={set.reps ?? ''}
-                      onChange={(e) =>
-                        updateSet(exIdx, setIdx, {
-                          reps: e.target.value ? Number(e.target.value) : null,
-                        })
-                      }
-                      placeholder={repTarget != null ? `${repTarget}` : 'reps'}
-                      className="input py-2.5 text-center text-sm"
-                    />
-
-                    <input
-                      type="number"
-                      inputMode="decimal"
-                      min="1"
-                      max="10"
-                      step="0.5"
-                      value={set.rpe ?? ''}
-                      onChange={(e) =>
-                        updateSet(exIdx, setIdx, {
-                          rpe: e.target.value ? Number(e.target.value) : null,
-                        })
-                      }
-                      placeholder="—"
-                      className="input py-2.5 text-center text-sm"
-                    />
-
-                    <button
-                      onClick={() => updateSet(exIdx, setIdx, { completed: !set.completed })}
-                      title={set.completed ? 'Mark incomplete' : 'Mark set done'}
-                      className={`text-2xl text-center leading-none transition-colors ${
-                        set.completed ? 'text-brand-400' : 'text-gray-600 hover:text-gray-300'
+                  isMesoCompleted ? (
+                    /* ── Read-only row ── */
+                    <div
+                      key={setIdx}
+                      className={`grid grid-cols-[2rem_1fr_1fr_1fr_2rem] sm:grid-cols-[3rem_1fr_1fr_1fr_3rem] gap-2 sm:gap-3 items-center rounded-lg px-1 py-1.5 ${
+                        set.completed ? 'bg-brand-900/10' : 'opacity-40'
                       }`}
                     >
-                      {set.completed ? '✓' : '○'}
-                    </button>
-                  </div>
+                      <span className="text-sm text-gray-500 text-center">{setIdx + 1}</span>
+                      <span className="text-sm text-gray-300 text-center">
+                        {set.weight != null ? `${set.weight} kg` : '—'}
+                      </span>
+                      <span className="text-sm text-gray-300 text-center">
+                        {set.reps != null ? `${set.reps}` : '—'}
+                      </span>
+                      <span className="text-sm text-gray-300 text-center">
+                        {set.rpe != null ? set.rpe : '—'}
+                      </span>
+                      <span className={`text-center text-base ${set.completed ? 'text-brand-400' : 'text-gray-700'}`}>
+                        {set.completed ? '✓' : '○'}
+                      </span>
+                    </div>
+                  ) : (
+                    /* ── Editable row ── */
+                    <div
+                      key={setIdx}
+                      className={`grid grid-cols-[2rem_1fr_1fr_1fr_2.5rem] sm:grid-cols-[3rem_1fr_1fr_1fr_3rem] gap-2 sm:gap-3 items-center rounded-lg px-1 py-1 transition-colors ${
+                        set.completed ? 'bg-brand-900/20' : ''
+                      }`}
+                    >
+                      <span className="text-sm text-gray-400 text-center font-medium">
+                        {setIdx + 1}
+                      </span>
+
+                      <input
+                        type="number"
+                        inputMode="decimal"
+                        min="0"
+                        step="2.5"
+                        value={set.weight ?? ''}
+                        onChange={(e) =>
+                          updateSet(exIdx, setIdx, {
+                            weight: e.target.value ? Number(e.target.value) : null,
+                          })
+                        }
+                        placeholder="kg"
+                        className="input py-2.5 text-center text-sm"
+                      />
+
+                      <input
+                        type="number"
+                        inputMode="numeric"
+                        min="1"
+                        max="100"
+                        value={set.reps ?? ''}
+                        onChange={(e) =>
+                          updateSet(exIdx, setIdx, {
+                            reps: e.target.value ? Number(e.target.value) : null,
+                          })
+                        }
+                        placeholder={repTarget != null ? `${repTarget}` : 'reps'}
+                        className="input py-2.5 text-center text-sm"
+                      />
+
+                      <input
+                        type="number"
+                        inputMode="decimal"
+                        min="1"
+                        max="10"
+                        step="0.5"
+                        value={set.rpe ?? ''}
+                        onChange={(e) =>
+                          updateSet(exIdx, setIdx, {
+                            rpe: e.target.value ? Number(e.target.value) : null,
+                          })
+                        }
+                        placeholder="—"
+                        className="input py-2.5 text-center text-sm"
+                      />
+
+                      <button
+                        onClick={() => updateSet(exIdx, setIdx, { completed: !set.completed })}
+                        title={set.completed ? 'Mark incomplete' : 'Mark set done'}
+                        className={`text-2xl text-center leading-none transition-colors ${
+                          set.completed ? 'text-brand-400' : 'text-gray-600 hover:text-gray-300'
+                        }`}
+                      >
+                        {set.completed ? '✓' : '○'}
+                      </button>
+                    </div>
+                  )
                 ))}
               </div>
 
-              {/* Feeling feedback */}
+              {/* Feeling — read-only badge or interactive picker */}
               <div className="mt-4 pt-3 border-t border-gray-800/60 flex items-center gap-2 flex-wrap">
-                <span className="text-xs text-gray-500 shrink-0">How did it feel?</span>
-                <div className="flex gap-1.5 flex-wrap flex-1">
-                  {FEELINGS.map((f) => (
-                    <button
-                      key={f.id}
-                      onClick={() => updateFeeling(exIdx, f.id)}
-                      className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${
-                        exLog.feeling === f.id ? f.activeClass : FEELING_IDLE
-                      }`}
-                    >
-                      {f.label}
-                    </button>
-                  ))}
-                </div>
-                {prev?.feeling && (
-                  <span className="text-xs text-gray-600 shrink-0">
-                    Last: {feelingById(prev.feeling)?.label}
-                  </span>
+                <span className="text-xs text-gray-500 shrink-0">
+                  {isMesoCompleted ? 'Felt:' : 'How did it feel?'}
+                </span>
+                {isMesoCompleted ? (
+                  exLog.feeling ? (
+                    <span className={`px-2.5 py-1 rounded-full text-xs font-medium border ${feelingById(exLog.feeling)?.activeClass ?? ''}`}>
+                      {feelingById(exLog.feeling)?.label}
+                    </span>
+                  ) : (
+                    <span className="text-xs text-gray-600">—</span>
+                  )
+                ) : (
+                  <>
+                    <div className="flex gap-1.5 flex-wrap flex-1">
+                      {FEELINGS.map((f) => (
+                        <button
+                          key={f.id}
+                          onClick={() => updateFeeling(exIdx, f.id)}
+                          className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${
+                            exLog.feeling === f.id ? f.activeClass : FEELING_IDLE
+                          }`}
+                        >
+                          {f.label}
+                        </button>
+                      ))}
+                    </div>
+                    {prev?.feeling && (
+                      <span className="text-xs text-gray-600 shrink-0">
+                        Last: {feelingById(prev.feeling)?.label}
+                      </span>
+                    )}
+                  </>
                 )}
               </div>
             </section>
@@ -462,22 +515,30 @@ export default function WorkoutLogger() {
       </div>
 
       {/* Sticky footer */}
-      <div className="shrink-0 px-4 md:px-6 py-4 border-t border-gray-800 bg-gray-950 flex gap-3">
-        <button
-          onClick={() => save(false)}
-          disabled={saving}
-          className="btn-secondary flex-1"
-        >
-          {saving ? 'Saving…' : 'Save Progress'}
-        </button>
-        <button
-          onClick={() => save(true)}
-          disabled={saving}
-          className="btn-primary flex-1"
-        >
-          {saving ? 'Saving…' : '✓ Complete Workout'}
-        </button>
-      </div>
+      {isMesoCompleted ? (
+        <div className="shrink-0 px-4 md:px-6 py-4 border-t border-gray-800 bg-gray-950">
+          <Link to={`/mesocycles/${id}`} className="btn-secondary w-full text-center block">
+            ← Back to Overview
+          </Link>
+        </div>
+      ) : (
+        <div className="shrink-0 px-4 md:px-6 py-4 border-t border-gray-800 bg-gray-950 flex gap-3">
+          <button
+            onClick={() => save(false)}
+            disabled={saving}
+            className="btn-secondary flex-1"
+          >
+            {saving ? 'Saving…' : 'Save Progress'}
+          </button>
+          <button
+            onClick={() => save(true)}
+            disabled={saving}
+            className="btn-primary flex-1"
+          >
+            {saving ? 'Saving…' : '✓ Complete Workout'}
+          </button>
+        </div>
+      )}
     </div>
   );
 }
