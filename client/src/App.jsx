@@ -6,6 +6,8 @@ import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import MesocycleList from './pages/MesocycleList';
 import MesocycleBuilder from './pages/MesocycleBuilder';
+import MesocycleTracker from './pages/MesocycleTracker';
+import WorkoutLogger from './pages/WorkoutLogger';
 
 function RequireAuth({ children }) {
   const { user, loading } = useAuth();
@@ -32,7 +34,9 @@ export default function App() {
           <Route path="/" element={<RequireAuth><Dashboard /></RequireAuth>} />
           <Route path="/mesocycles" element={<RequireAuth><MesocycleList /></RequireAuth>} />
           <Route path="/mesocycles/new" element={<RequireAuth><MesocycleBuilder /></RequireAuth>} />
-          <Route path="/mesocycles/:id" element={<RequireAuth><MesocycleBuilder /></RequireAuth>} />
+          <Route path="/mesocycles/:id/edit" element={<RequireAuth><MesocycleBuilder /></RequireAuth>} />
+          <Route path="/mesocycles/:id/session/:week/:dayIndex" element={<RequireAuth><WorkoutLogger /></RequireAuth>} />
+          <Route path="/mesocycles/:id" element={<RequireAuth><MesocycleTracker /></RequireAuth>} />
 
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

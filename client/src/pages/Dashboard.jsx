@@ -42,7 +42,7 @@ export default function Dashboard() {
               </p>
             </div>
             <Link to={`/mesocycles/${active._id}`} className="btn-primary">
-              View Plan
+              Train Now
             </Link>
           </div>
         </div>

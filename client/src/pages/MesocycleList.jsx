@@ -69,7 +69,10 @@ export default function MesocycleList() {
               </div>
               <div className="flex items-center gap-2 mt-auto">
                 <Link to={`/mesocycles/${m._id}`} className="btn-primary flex-1 text-center">
-                  Open
+                  Train
+                </Link>
+                <Link to={`/mesocycles/${m._id}/edit`} className="btn-secondary px-4 text-center">
+                  Edit
                 </Link>
                 <button onClick={() => deleteMeso(m._id)} className="btn-danger px-3">
                   ✕

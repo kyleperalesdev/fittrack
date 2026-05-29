@@ -5,6 +5,7 @@ import { connectDB } from './config/db.js';
 import authRoutes from './routes/auth.js';
 import mesocycleRoutes from './routes/mesocycles.js';
 import exerciseRoutes from './routes/exercises.js';
+import sessionRoutes from './routes/sessions.js';
 
 dotenv.config();
 
@@ -18,6 +19,7 @@ connectDB();
 app.use('/api/auth', authRoutes);
 app.use('/api/mesocycles', mesocycleRoutes);
 app.use('/api/exercises', exerciseRoutes);
+app.use('/api/sessions', sessionRoutes);
 
 app.get('/api/health', (_req, res) => res.json({ status: 'ok' }));
 
