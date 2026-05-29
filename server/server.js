@@ -16,14 +16,10 @@ const isProd = process.env.NODE_ENV === 'production';
 
 const app = express();
 
-// In production the frontend is served from the same origin, so CORS is only
-// needed in development (Vite dev server on a different port).
-if (!isProd) {
-  app.use(cors({
-    origin: process.env.CORS_ORIGIN ?? 'http://localhost:5173',
-    credentials: true,
-  }));
-}
+app.use(cors({
+  origin: process.env.CORS_ORIGIN ?? 'http://localhost:5173',
+  credentials: true,
+}));
 
 app.use(express.json());
 
