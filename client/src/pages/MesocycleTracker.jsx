@@ -118,7 +118,8 @@ export default function MesocycleTracker() {
           </div>
         </div>
 
-        <div className="grid grid-cols-7 gap-2">
+        <div className="overflow-x-auto -mx-4 md:mx-0">
+        <div className="grid grid-cols-7 gap-2 min-w-[420px] px-4 md:px-0">
           {mesocycle.weekTemplate.map((day) => {
             const s = sessions.find(
               (x) => x.week === selectedWeek && x.dayIndex === day.dayIndex
@@ -142,6 +143,7 @@ export default function MesocycleTracker() {
               />
             );
           })}
+        </div>
         </div>
 
         {trainingDays > 0 && (

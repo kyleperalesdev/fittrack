@@ -53,7 +53,7 @@ function DraggableExercise({ exercise }) {
   );
 }
 
-export default function ExerciseSidebar({ exercises, onAddCustom }) {
+export default function ExerciseSidebar({ exercises, onAddCustom, className = '' }) {
   const [search, setSearch] = useState('');
   const [filterGroup, setFilterGroup] = useState('all');
 
@@ -72,7 +72,7 @@ export default function ExerciseSidebar({ exercises, onAddCustom }) {
   }, [exercises]);
 
   return (
-    <div className="flex flex-col h-full bg-gray-900 border-r border-gray-800 w-64 shrink-0">
+    <div className={`flex flex-col h-full bg-gray-900 border-r border-gray-800 w-64 shrink-0 ${className}`}>
       <div className="p-4 border-b border-gray-800">
         <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">
           Exercise Library

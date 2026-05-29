@@ -155,10 +155,10 @@ export default function WorkoutLogger() {
   // ── Full-page layout (breaks out of Layout padding) ──────────────────────
 
   return (
-    <div className="-mx-6 -my-8 h-[calc(100vh-5rem)] flex flex-col">
+    <div className="-mx-4 md:-mx-6 -my-5 md:-my-8 h-[calc(100dvh-3.5rem)] md:h-[calc(100vh-5rem)] flex flex-col">
 
       {/* Sticky header */}
-      <div className="shrink-0 flex items-center gap-3 px-6 py-4 border-b border-gray-800 bg-gray-950">
+      <div className="shrink-0 flex items-center gap-3 px-4 md:px-6 py-3 md:py-4 border-b border-gray-800 bg-gray-950">
         <Link
           to={`/mesocycles/${id}`}
           className="text-gray-400 hover:text-gray-200 transition-colors text-sm font-medium shrink-0"
@@ -183,7 +183,7 @@ export default function WorkoutLogger() {
       </div>
 
       {/* Scrollable body */}
-      <div className="flex-1 overflow-y-auto px-6 py-6 space-y-10">
+      <div className="flex-1 overflow-y-auto px-4 md:px-6 py-5 md:py-6 space-y-10">
         {error && (
           <div className="bg-red-900/40 border border-red-700 text-red-300 text-sm rounded-lg px-4 py-3">
             {error}
@@ -231,9 +231,9 @@ export default function WorkoutLogger() {
               </div>
 
               {/* Column headers */}
-              <div className="grid grid-cols-[3rem_1fr_1fr_1fr_3rem] gap-3 mb-2 px-1 text-xs text-gray-500 uppercase tracking-wide">
-                <span className="text-center">Set</span>
-                <span className="text-center">Weight</span>
+              <div className="grid grid-cols-[2rem_1fr_1fr_1fr_2.5rem] sm:grid-cols-[3rem_1fr_1fr_1fr_3rem] gap-2 sm:gap-3 mb-2 px-1 text-xs text-gray-500 uppercase tracking-wide">
+                <span className="text-center">#</span>
+                <span className="text-center">Wt</span>
                 <span className="text-center">Reps</span>
                 <span className="text-center">RPE</span>
                 <span />
@@ -244,7 +244,7 @@ export default function WorkoutLogger() {
                 {exLog.sets.map((set, setIdx) => (
                   <div
                     key={setIdx}
-                    className={`grid grid-cols-[3rem_1fr_1fr_1fr_3rem] gap-3 items-center rounded-lg px-1 py-1 transition-colors ${
+                    className={`grid grid-cols-[2rem_1fr_1fr_1fr_2.5rem] sm:grid-cols-[3rem_1fr_1fr_1fr_3rem] gap-2 sm:gap-3 items-center rounded-lg px-1 py-1 transition-colors ${
                       set.completed ? 'bg-brand-900/20' : ''
                     }`}
                   >
@@ -264,7 +264,7 @@ export default function WorkoutLogger() {
                         })
                       }
                       placeholder="kg"
-                      className="input py-2 text-center text-sm"
+                      className="input py-2.5 text-center text-sm"
                     />
 
                     <input
@@ -279,7 +279,7 @@ export default function WorkoutLogger() {
                         })
                       }
                       placeholder="reps"
-                      className="input py-2 text-center text-sm"
+                      className="input py-2.5 text-center text-sm"
                     />
 
                     <input
@@ -295,7 +295,7 @@ export default function WorkoutLogger() {
                         })
                       }
                       placeholder="—"
-                      className="input py-2 text-center text-sm"
+                      className="input py-2.5 text-center text-sm"
                     />
 
                     <button
@@ -323,7 +323,7 @@ export default function WorkoutLogger() {
       </div>
 
       {/* Sticky footer */}
-      <div className="shrink-0 px-6 py-4 border-t border-gray-800 bg-gray-950 flex gap-3">
+      <div className="shrink-0 px-4 md:px-6 py-4 border-t border-gray-800 bg-gray-950 flex gap-3">
         <button
           onClick={() => save(false)}
           disabled={saving}

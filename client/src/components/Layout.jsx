@@ -17,8 +17,8 @@ export default function Layout({ children }) {
 
   return (
     <div className="flex min-h-screen">
-      {/* Sidebar */}
-      <aside className="w-56 bg-gray-900 border-r border-gray-800 flex flex-col">
+      {/* Desktop sidebar — hidden on mobile */}
+      <aside className="hidden md:flex flex-col w-56 bg-gray-900 border-r border-gray-800 shrink-0">
         <div className="px-5 py-6 border-b border-gray-800">
           <h1 className="text-xl font-bold text-brand-400">FitTrack</h1>
           <p className="text-xs text-gray-500 mt-0.5 truncate">{user?.name}</p>
@@ -49,10 +49,38 @@ export default function Layout({ children }) {
         </div>
       </aside>
 
-      {/* Main content */}
-      <main className="flex-1 overflow-auto">
-        <div className="max-w-6xl mx-auto px-6 py-8">{children}</div>
+      {/* Main content — bottom padding on mobile reserves space for the fixed nav */}
+      <main className="flex-1 overflow-auto pb-16 md:pb-0">
+        <div className="max-w-6xl mx-auto px-4 py-5 md:px-6 md:py-8">
+          {children}
+        </div>
       </main>
+
+      {/* Mobile bottom nav — hidden on desktop */}
+      <nav className="md:hidden fixed bottom-0 inset-x-0 z-50 bg-gray-900 border-t border-gray-800 flex h-14">
+        {navItems.map(({ to, label, icon }) => (
+          <NavLink
+            key={to}
+            to={to}
+            end={to === '/'}
+            className={({ isActive }) =>
+              `flex-1 flex flex-col items-center justify-center gap-0.5 text-xs font-medium transition-colors ${
+                isActive ? 'text-brand-400' : 'text-gray-500 hover:text-gray-300'
+              }`
+            }
+          >
+            <span className="text-lg leading-none">{icon}</span>
+            <span>{label}</span>
+          </NavLink>
+        ))}
+        <button
+          onClick={handleLogout}
+          className="flex-1 flex flex-col items-center justify-center gap-0.5 text-xs font-medium text-gray-500 hover:text-gray-300"
+        >
+          <span className="text-lg leading-none">↩</span>
+          <span>Sign Out</span>
+        </button>
+      </nav>
     </div>
   );
 }

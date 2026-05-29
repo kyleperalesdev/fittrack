@@ -30,6 +30,7 @@ export default function MesocycleBuilder() {
 
   const [exercises, setExercises] = useState([]);
   const [showModal, setShowModal] = useState(false);
+  const [showSidebar, setShowSidebar] = useState(false);
   const [activeExercise, setActiveExercise] = useState(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -245,25 +246,40 @@ export default function MesocycleBuilder() {
 
   // --- Step 2: Build the week grid ---
   return (
-    <div className="flex flex-col h-[calc(100vh-5rem)] -mx-6 -my-8">
+    <div className="flex flex-col -mx-4 md:-mx-6 -my-5 md:-my-8 h-[calc(100dvh-3.5rem)] md:h-[calc(100vh-5rem)]">
       {/* Top bar */}
-      <div className="flex items-center justify-between px-6 py-3 border-b border-gray-800 bg-gray-950 shrink-0">
-        <div className="flex items-center gap-3">
-          <button onClick={() => setStep(1)} className="btn-secondary text-xs px-3">
-            ← Back
-          </button>
-          <div>
-            <h2 className="font-bold text-gray-100">{name || 'Untitled'}</h2>
-            <p className="text-xs text-gray-500">{splitType} · {weeks} weeks — drag exercises from the sidebar</p>
-          </div>
+      <div className="flex items-center gap-2 px-4 md:px-6 py-3 border-b border-gray-800 bg-gray-950 shrink-0">
+        <button onClick={() => setStep(1)} className="btn-secondary text-xs px-3 shrink-0">
+          ← Back
+        </button>
+
+        <div className="flex-1 min-w-0">
+          <h2 className="font-bold text-gray-100 truncate">{name || 'Untitled'}</h2>
+          <p className="text-xs text-gray-500 hidden sm:block">{splitType} · {weeks} weeks — drag exercises from the sidebar</p>
         </div>
-        <div className="flex items-center gap-3">
-          {error && <span className="text-red-400 text-sm">{error}</span>}
-          <button onClick={handleSave} disabled={saving} className="btn-primary">
-            {saving ? 'Saving…' : isEdit ? 'Save Changes' : 'Create Mesocycle'}
+
+        {/* Mobile: toggle exercise library */}
+        <button
+          onClick={() => setShowSidebar((s) => !s)}
+          className="md:hidden btn-secondary text-xs px-3 shrink-0"
+        >
+          {showSidebar ? 'Hide' : 'Exercises'}
+        </button>
+
+        <div className="flex items-center gap-2 shrink-0">
+          {error && <span className="text-red-400 text-xs hidden sm:inline">{error}</span>}
+          <button onClick={handleSave} disabled={saving} className="btn-primary text-sm">
+            {saving ? 'Saving…' : isEdit ? 'Save' : 'Create'}
           </button>
         </div>
       </div>
+
+      {/* Mobile: error below top bar */}
+      {error && (
+        <div className="sm:hidden px-4 py-2 bg-red-900/40 border-b border-red-800 text-red-300 text-xs">
+          {error}
+        </div>
+      )}
 
       {/* Content: sidebar + grid */}
       <div className="flex flex-1 overflow-hidden">
@@ -273,9 +289,11 @@ export default function MesocycleBuilder() {
           onDragStart={handleDragStart}
           onDragEnd={handleDragEnd}
         >
+          {/* Sidebar: always visible on desktop; toggleable overlay on mobile */}
           <ExerciseSidebar
             exercises={exercises}
             onAddCustom={() => setShowModal(true)}
+            className={showSidebar ? 'absolute inset-y-0 left-0 z-10 shadow-2xl' : 'hidden md:flex'}
           />
 
           {/* Weekly grid */}
