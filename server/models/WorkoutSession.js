@@ -14,6 +14,11 @@ const exerciseLogSchema = new mongoose.Schema(
   {
     exercise: { type: mongoose.Schema.Types.ObjectId, ref: 'Exercise', required: true },
     sets: [setLogSchema],
+    feeling: {
+      type: String,
+      enum: ['easy', 'good', 'hard', 'fail'],
+      default: null,
+    },
   },
   { _id: false }
 );

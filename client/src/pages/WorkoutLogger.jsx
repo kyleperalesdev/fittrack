@@ -16,8 +16,52 @@ const MUSCLE_COLORS = {
   full_body: 'text-gray-400',
 };
 
-// Build a map of exerciseId → { weight, reps } from the most recent previous
-// session that shares the same dayIndex (e.g. Upper A → last Upper A).
+const FEELINGS = [
+  {
+    id: 'easy',
+    label: 'Too Easy',
+    activeClass: 'text-sky-300 border-sky-600 bg-sky-900/30',
+    // next session: +2 reps
+    repDelta: +2,
+  },
+  {
+    id: 'good',
+    label: 'Good',
+    activeClass: 'text-green-300 border-green-600 bg-green-900/30',
+    // next session: +1 rep (default)
+    repDelta: +1,
+  },
+  {
+    id: 'hard',
+    label: 'Hard',
+    activeClass: 'text-yellow-300 border-yellow-600 bg-yellow-900/30',
+    // next session: hold reps, don't increase
+    repDelta: 0,
+  },
+  {
+    id: 'fail',
+    label: "Couldn't Finish",
+    activeClass: 'text-red-300 border-red-700 bg-red-900/30',
+    // next session: pull back slightly
+    repDelta: -1,
+  },
+];
+
+const FEELING_IDLE = 'text-gray-500 border-gray-700 hover:border-gray-500 hover:text-gray-300';
+
+function feelingById(id) {
+  return FEELINGS.find((f) => f.id === id) ?? null;
+}
+
+// Derive rep target for this session based on previous reps + how that session felt.
+function calcRepTarget(prevReps, prevFeeling) {
+  if (prevReps == null) return null;
+  const delta = feelingById(prevFeeling)?.repDelta ?? +1;
+  return Math.max(1, prevReps + delta);
+}
+
+// Build a map of exerciseId → { weight, reps, feeling } from the most recent
+// prior session sharing the same dayIndex (Upper A → last Upper A, etc.).
 function buildPrevPerformance(sessions, dayIdx, weekNum) {
   const prev = sessions
     .filter((s) => s.dayIndex === dayIdx && s.week < weekNum)
@@ -32,7 +76,11 @@ function buildPrevPerformance(sessions, dayIdx, weekNum) {
     if (done.length === 0) continue;
     const bestReps = Math.max(...done.map((s) => s.reps));
     const lastWeight = done[done.length - 1].weight;
-    map.set(exId, { weight: lastWeight, reps: bestReps });
+    map.set(exId, {
+      weight: lastWeight,
+      reps: bestReps,
+      feeling: exLog.feeling ?? null,
+    });
   }
   return map;
 }
@@ -78,17 +126,19 @@ export default function WorkoutLogger() {
           setExercises(
             existing.exercises.map((ex) => ({
               ...ex,
+              feeling: ex.feeling ?? null,
               sets: ex.sets.map((s) => ({ ...s })),
             }))
           );
         } else {
-          // New session — pre-fill weights from previous week
+          // New session — pre-fill weights from previous week's same day
           setExercises(
             (templateDay?.exercises ?? []).map((ex) => {
               const exId = (ex.exercise._id ?? ex.exercise).toString();
               const prev = prevMap.get(exId);
               return {
                 exercise: ex.exercise,
+                feeling: null,
                 sets: Array.from({ length: ex.sets }, () => ({
                   weight: prev?.weight ?? null,
                   reps: null,
@@ -122,6 +172,16 @@ export default function WorkoutLogger() {
     );
   }
 
+  function updateFeeling(exIdx, feelingId) {
+    setExercises((prev) =>
+      prev.map((ex, i) =>
+        i === exIdx
+          ? { ...ex, feeling: ex.feeling === feelingId ? null : feelingId }
+          : ex
+      )
+    );
+  }
+
   async function save(completed) {
     setSaving(true);
     setError('');
@@ -134,6 +194,7 @@ export default function WorkoutLogger() {
         exercises: exercises.map((ex) => ({
           exercise: ex.exercise._id ?? ex.exercise,
           sets: ex.sets,
+          feeling: ex.feeling ?? null,
         })),
       };
 
@@ -240,36 +301,36 @@ export default function WorkoutLogger() {
           const exName = exLog.exercise.name ?? '—';
           const exGroup = exLog.exercise.muscleGroup;
           const completedSets = exLog.sets.filter((s) => s.completed).length;
-          const repTarget = prev?.reps != null ? prev.reps + 1 : null;
+
+          const repTarget = calcRepTarget(prev?.reps, prev?.feeling);
+          const prevFeelingInfo = feelingById(prev?.feeling);
 
           return (
             <section key={exIdx}>
-              {/* Exercise title row */}
+              {/* Exercise header */}
               <div className="flex items-start justify-between gap-3 mb-3">
                 <div>
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span
-                      className={`text-xs font-bold uppercase ${
-                        MUSCLE_COLORS[exGroup] ?? 'text-gray-400'
-                      }`}
-                    >
+                    <span className={`text-xs font-bold uppercase ${MUSCLE_COLORS[exGroup] ?? 'text-gray-400'}`}>
                       {exGroup?.replace('_', ' ')}
                     </span>
                     <h3 className="font-semibold text-gray-100 text-lg">{exName}</h3>
                   </div>
 
-                  {/* Previous performance + rep target */}
+                  {/* Previous performance + adjusted rep target */}
                   {prev ? (
                     <p className="text-xs text-gray-500 mt-0.5">
                       Last week:{' '}
-                      {prev.weight != null ? (
-                        <span className="text-gray-400">{prev.weight} kg × {prev.reps} reps</span>
-                      ) : (
-                        <span className="text-gray-400">{prev.reps} reps</span>
-                      )}
+                      {prev.weight != null
+                        ? <span className="text-gray-400">{prev.weight} kg × {prev.reps} reps</span>
+                        : <span className="text-gray-400">{prev.reps} reps</span>
+                      }
                       {repTarget != null && (
                         <span className="ml-1.5 text-brand-400 font-medium">
                           · target ≥{repTarget}
+                          {prevFeelingInfo && (
+                            <span className="text-gray-600 font-normal"> ({prevFeelingInfo.label.toLowerCase()})</span>
+                          )}
                         </span>
                       )}
                     </p>
@@ -281,7 +342,7 @@ export default function WorkoutLogger() {
                 </div>
 
                 <p className="text-xs text-gray-600 shrink-0 mt-1">
-                  {completedSets}/{exLog.sets.length} sets done
+                  {completedSets}/{exLog.sets.length} sets
                 </p>
               </div>
 
@@ -290,7 +351,8 @@ export default function WorkoutLogger() {
                 <span className="text-center">#</span>
                 <span className="text-center">Weight</span>
                 <span className="text-center">
-                  Reps{repTarget != null && (
+                  Reps
+                  {repTarget != null && (
                     <span className="ml-1 normal-case text-brand-500">≥{repTarget}</span>
                   )}
                 </span>
@@ -358,14 +420,10 @@ export default function WorkoutLogger() {
                     />
 
                     <button
-                      onClick={() =>
-                        updateSet(exIdx, setIdx, { completed: !set.completed })
-                      }
+                      onClick={() => updateSet(exIdx, setIdx, { completed: !set.completed })}
                       title={set.completed ? 'Mark incomplete' : 'Mark set done'}
                       className={`text-2xl text-center leading-none transition-colors ${
-                        set.completed
-                          ? 'text-brand-400'
-                          : 'text-gray-600 hover:text-gray-300'
+                        set.completed ? 'text-brand-400' : 'text-gray-600 hover:text-gray-300'
                       }`}
                     >
                       {set.completed ? '✓' : '○'}
@@ -373,11 +431,33 @@ export default function WorkoutLogger() {
                   </div>
                 ))}
               </div>
+
+              {/* Feeling feedback */}
+              <div className="mt-4 pt-3 border-t border-gray-800/60 flex items-center gap-2 flex-wrap">
+                <span className="text-xs text-gray-500 shrink-0">How did it feel?</span>
+                <div className="flex gap-1.5 flex-wrap flex-1">
+                  {FEELINGS.map((f) => (
+                    <button
+                      key={f.id}
+                      onClick={() => updateFeeling(exIdx, f.id)}
+                      className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${
+                        exLog.feeling === f.id ? f.activeClass : FEELING_IDLE
+                      }`}
+                    >
+                      {f.label}
+                    </button>
+                  ))}
+                </div>
+                {prev?.feeling && (
+                  <span className="text-xs text-gray-600 shrink-0">
+                    Last: {feelingById(prev.feeling)?.label}
+                  </span>
+                )}
+              </div>
             </section>
           );
         })}
 
-        {/* Bottom padding so last exercise isn't hidden behind footer */}
         <div className="h-4" />
       </div>
 

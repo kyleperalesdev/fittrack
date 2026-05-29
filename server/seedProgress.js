@@ -201,10 +201,27 @@ async function run() {
       const isFuture = week === 4 && dayIndex === 4;   // Fri May 30 — skip
       if (isFuture) continue;
 
-      const exercises = list.map((tmpl) => ({
-        exercise: eid(tmpl.name),
-        sets: buildSets(tmpl, tmpl.name, week, isToday ? { partialFrom: 2 } : {}),
-      }));
+      // Realistic feeling progression: light early weeks → harder as load climbs
+      // Compounds get hard faster; isolations stay easier longer.
+      const COMPOUND_NAMES = new Set([
+        'Barbell Bench Press', 'Barbell Row', 'Overhead Press (Barbell)',
+        'Barbell Back Squat', 'Romanian Deadlift', 'Deadlift',
+        'Incline Barbell Press', 'Pull-Up', 'Bulgarian Split Squat',
+      ]);
+      const weekFeelings = {
+        compound: ['easy', 'good', 'hard', null],   // null = today (no rating yet)
+        isolation: ['easy', 'easy', 'good', null],
+      };
+
+      const exercises = list.map((tmpl) => {
+        const category = COMPOUND_NAMES.has(tmpl.name) ? 'compound' : 'isolation';
+        const feeling = weekFeelings[category][week - 1];
+        return {
+          exercise: eid(tmpl.name),
+          sets: buildSets(tmpl, tmpl.name, week, isToday ? { partialFrom: 2 } : {}),
+          ...(feeling ? { feeling } : {}),
+        };
+      });
 
       await WorkoutSession.create({
         user: user._id,
