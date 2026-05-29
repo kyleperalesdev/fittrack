@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import api from '../api/axios';
 import { SPLIT_LABELS } from '../utils/mesocycleConstants';
 import ProgressCharts from '../components/ProgressCharts';
@@ -21,10 +21,12 @@ function currentWeekNumber(startDate, totalWeeks) {
 
 export default function MesocycleTracker() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [mesocycle, setMesocycle] = useState(null);
   const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedWeek, setSelectedWeek] = useState(1);
+  const [duplicating, setDuplicating] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -63,6 +65,17 @@ export default function MesocycleTracker() {
   const weeks = Array.from({ length: mesocycle.weeks }, (_, i) => i + 1);
   const trainingDays = mesocycle.weekTemplate.filter((d) => !d.isRestDay).length;
   const weekDone = sessions.filter((s) => s.week === selectedWeek && s.completed).length;
+  const isCompleted = mesocycle.status === 'completed';
+
+  async function duplicateMeso() {
+    setDuplicating(true);
+    try {
+      const res = await api.post(`/mesocycles/${id}/duplicate`);
+      navigate(`/mesocycles/${res.data._id}/edit`);
+    } catch {
+      setDuplicating(false);
+    }
+  }
 
   return (
     <div className="space-y-8">
@@ -77,10 +90,39 @@ export default function MesocycleTracker() {
             )}
           </p>
         </div>
-        <Link to={`/mesocycles/${id}/edit`} className="btn-secondary shrink-0">
-          Edit Plan
-        </Link>
+        <div className="flex items-center gap-2 shrink-0">
+          <Link to={`/mesocycles/${id}/edit`} className="btn-secondary">
+            Edit Plan
+          </Link>
+          <button
+            onClick={duplicateMeso}
+            disabled={duplicating}
+            title="Duplicate as a new cycle"
+            className={isCompleted ? 'btn-primary' : 'btn-secondary'}
+          >
+            {duplicating ? '…' : isCompleted ? '↻ New Cycle' : '⧉ Duplicate'}
+          </button>
+        </div>
       </div>
+
+      {/* ── Completed banner ── */}
+      {isCompleted && (
+        <div className="card border-brand-700 bg-brand-900/20 flex items-center justify-between gap-4 flex-wrap">
+          <div>
+            <p className="font-semibold text-brand-300">Cycle Complete</p>
+            <p className="text-sm text-gray-400 mt-0.5">
+              Great work finishing this block. Start a new cycle to keep progressing.
+            </p>
+          </div>
+          <button
+            onClick={duplicateMeso}
+            disabled={duplicating}
+            className="btn-primary shrink-0"
+          >
+            {duplicating ? 'Duplicating…' : '↻ Start New Cycle'}
+          </button>
+        </div>
+      )}
 
       {/* ── Today's Workout ── */}
       <section>

@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import api from '../api/axios';
 import { STATUS_COLORS, SPLIT_LABELS } from '../utils/mesocycleConstants';
 
 export default function MesocycleList() {
   const [mesocycles, setMesocycles] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [duplicating, setDuplicating] = useState(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     api.get('/mesocycles')
@@ -13,6 +15,16 @@ export default function MesocycleList() {
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
+
+  async function duplicateMeso(id) {
+    setDuplicating(id);
+    try {
+      const res = await api.post(`/mesocycles/${id}/duplicate`);
+      navigate(`/mesocycles/${res.data._id}/edit`);
+    } catch {
+      setDuplicating(null);
+    }
+  }
 
   async function deleteMeso(id) {
     if (!confirm('Delete this mesocycle?')) return;
@@ -71,9 +83,17 @@ export default function MesocycleList() {
                 <Link to={`/mesocycles/${m._id}`} className="btn-primary flex-1 text-center">
                   Train
                 </Link>
-                <Link to={`/mesocycles/${m._id}/edit`} className="btn-secondary px-4 text-center">
+                <Link to={`/mesocycles/${m._id}/edit`} className="btn-secondary px-3 text-center">
                   Edit
                 </Link>
+                <button
+                  onClick={() => duplicateMeso(m._id)}
+                  disabled={duplicating === m._id}
+                  title="Duplicate as new cycle"
+                  className="btn-secondary px-3"
+                >
+                  {duplicating === m._id ? '…' : '⧉'}
+                </button>
                 <button onClick={() => deleteMeso(m._id)} className="btn-danger px-3">
                   ✕
                 </button>
