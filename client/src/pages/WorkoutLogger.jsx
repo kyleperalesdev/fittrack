@@ -16,6 +16,27 @@ const MUSCLE_COLORS = {
   full_body: 'text-gray-400',
 };
 
+// Build a map of exerciseId → { weight, reps } from the most recent previous
+// session that shares the same dayIndex (e.g. Upper A → last Upper A).
+function buildPrevPerformance(sessions, dayIdx, weekNum) {
+  const prev = sessions
+    .filter((s) => s.dayIndex === dayIdx && s.week < weekNum)
+    .sort((a, b) => b.week - a.week)[0];
+
+  if (!prev) return new Map();
+
+  const map = new Map();
+  for (const exLog of prev.exercises) {
+    const exId = (exLog.exercise._id ?? exLog.exercise).toString();
+    const done = exLog.sets.filter((s) => s.completed && s.reps != null);
+    if (done.length === 0) continue;
+    const bestReps = Math.max(...done.map((s) => s.reps));
+    const lastWeight = done[done.length - 1].weight;
+    map.set(exId, { weight: lastWeight, reps: bestReps });
+  }
+  return map;
+}
+
 export default function WorkoutLogger() {
   const { id, week, dayIndex } = useParams();
   const navigate = useNavigate();
@@ -27,6 +48,7 @@ export default function WorkoutLogger() {
   const [day, setDay] = useState(null);
   const [existingSession, setExistingSession] = useState(null);
   const [exercises, setExercises] = useState([]);
+  const [prevPerformance, setPrevPerformance] = useState(new Map());
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -38,29 +60,43 @@ export default function WorkoutLogger() {
     ])
       .then(([mesoRes, sessionsRes]) => {
         const m = mesoRes.data;
+        const allSessions = sessionsRes.data;
         setMesocycle(m);
 
         const templateDay = m.weekTemplate.find((d) => d.dayIndex === dayIdx);
         setDay(templateDay ?? null);
 
-        const existing = sessionsRes.data.find(
+        const existing = allSessions.find(
           (s) => s.week === weekNum && s.dayIndex === dayIdx
         );
 
+        const prevMap = buildPrevPerformance(allSessions, dayIdx, weekNum);
+        setPrevPerformance(prevMap);
+
         if (existing) {
           setExistingSession(existing);
-          setExercises(existing.exercises.map((ex) => ({ ...ex, sets: ex.sets.map((s) => ({ ...s })) })));
-        } else {
           setExercises(
-            (templateDay?.exercises ?? []).map((ex) => ({
-              exercise: ex.exercise,
-              sets: Array.from({ length: ex.sets }, () => ({
-                weight: null,
-                reps: null,
-                rpe: null,
-                completed: false,
-              })),
+            existing.exercises.map((ex) => ({
+              ...ex,
+              sets: ex.sets.map((s) => ({ ...s })),
             }))
+          );
+        } else {
+          // New session — pre-fill weights from previous week
+          setExercises(
+            (templateDay?.exercises ?? []).map((ex) => {
+              const exId = (ex.exercise._id ?? ex.exercise).toString();
+              const prev = prevMap.get(exId);
+              return {
+                exercise: ex.exercise,
+                sets: Array.from({ length: ex.sets }, () => ({
+                  weight: prev?.weight ?? null,
+                  reps: null,
+                  rpe: null,
+                  completed: false,
+                })),
+              };
+            })
           );
         }
       })
@@ -152,7 +188,7 @@ export default function WorkoutLogger() {
 
   const isCompleted = existingSession?.completed === true;
 
-  // ── Full-page layout (breaks out of Layout padding) ──────────────────────
+  // ── Full-page layout ──────────────────────────────────────────────────────
 
   return (
     <div className="-mx-4 md:-mx-6 -my-5 md:-my-8 h-[calc(100dvh-3.5rem)] md:h-[calc(100vh-5rem)] flex flex-col">
@@ -200,41 +236,64 @@ export default function WorkoutLogger() {
         {exercises.map((exLog, exIdx) => {
           const exId = (exLog.exercise._id ?? exLog.exercise).toString();
           const target = prescribed.get(exId);
+          const prev = prevPerformance.get(exId);
           const exName = exLog.exercise.name ?? '—';
           const exGroup = exLog.exercise.muscleGroup;
           const completedSets = exLog.sets.filter((s) => s.completed).length;
+          const repTarget = prev?.reps != null ? prev.reps + 1 : null;
 
           return (
             <section key={exIdx}>
               {/* Exercise title row */}
-              <div className="flex items-start justify-between gap-3 mb-4">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span
-                    className={`text-xs font-bold uppercase ${
-                      MUSCLE_COLORS[exGroup] ?? 'text-gray-400'
-                    }`}
-                  >
-                    {exGroup?.replace('_', ' ')}
-                  </span>
-                  <h3 className="font-semibold text-gray-100 text-lg">{exName}</h3>
-                </div>
-                <div className="text-right shrink-0">
-                  {target && (
-                    <p className="text-xs text-gray-500">
+              <div className="flex items-start justify-between gap-3 mb-3">
+                <div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span
+                      className={`text-xs font-bold uppercase ${
+                        MUSCLE_COLORS[exGroup] ?? 'text-gray-400'
+                      }`}
+                    >
+                      {exGroup?.replace('_', ' ')}
+                    </span>
+                    <h3 className="font-semibold text-gray-100 text-lg">{exName}</h3>
+                  </div>
+
+                  {/* Previous performance + rep target */}
+                  {prev ? (
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      Last week:{' '}
+                      {prev.weight != null ? (
+                        <span className="text-gray-400">{prev.weight} kg × {prev.reps} reps</span>
+                      ) : (
+                        <span className="text-gray-400">{prev.reps} reps</span>
+                      )}
+                      {repTarget != null && (
+                        <span className="ml-1.5 text-brand-400 font-medium">
+                          · target ≥{repTarget}
+                        </span>
+                      )}
+                    </p>
+                  ) : target ? (
+                    <p className="text-xs text-gray-600 mt-0.5">
                       Target: {target.reps} reps{target.rpe ? ` @ RPE ${target.rpe}` : ''}
                     </p>
-                  )}
-                  <p className="text-xs text-gray-600 mt-0.5">
-                    {completedSets}/{exLog.sets.length} sets done
-                  </p>
+                  ) : null}
                 </div>
+
+                <p className="text-xs text-gray-600 shrink-0 mt-1">
+                  {completedSets}/{exLog.sets.length} sets done
+                </p>
               </div>
 
               {/* Column headers */}
               <div className="grid grid-cols-[2rem_1fr_1fr_1fr_2.5rem] sm:grid-cols-[3rem_1fr_1fr_1fr_3rem] gap-2 sm:gap-3 mb-2 px-1 text-xs text-gray-500 uppercase tracking-wide">
                 <span className="text-center">#</span>
-                <span className="text-center">Wt</span>
-                <span className="text-center">Reps</span>
+                <span className="text-center">Weight</span>
+                <span className="text-center">
+                  Reps{repTarget != null && (
+                    <span className="ml-1 normal-case text-brand-500">≥{repTarget}</span>
+                  )}
+                </span>
                 <span className="text-center">RPE</span>
                 <span />
               </div>
@@ -278,7 +337,7 @@ export default function WorkoutLogger() {
                           reps: e.target.value ? Number(e.target.value) : null,
                         })
                       }
-                      placeholder="reps"
+                      placeholder={repTarget != null ? `${repTarget}` : 'reps'}
                       className="input py-2.5 text-center text-sm"
                     />
 
