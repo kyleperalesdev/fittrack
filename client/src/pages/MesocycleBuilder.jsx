@@ -38,7 +38,7 @@ export default function MesocycleBuilder() {
   const builder = useMesocycleBuilder();
   const {
     name, setName,
-    splitType, selectSplit,
+    splitType, setSplitType, selectSplit,
     weeks, setWeeks,
     weekTemplate,
     notes, setNotes,
@@ -51,23 +51,37 @@ export default function MesocycleBuilder() {
     setWeekTemplate,
   } = builder;
 
+  function addClientIds(template) {
+    return template.map((day) => ({
+      ...day,
+      exercises: day.exercises.map((ex) => ({
+        ...ex,
+        _clientId: ex._clientId ?? crypto.randomUUID(),
+      })),
+    }));
+  }
+
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
   useEffect(() => {
-    api.get('/exercises').then((res) => setExercises(res.data));
+    api.get('/exercises')
+      .then((res) => setExercises(res.data))
+      .catch(() => setError('Failed to load exercise library'));
   }, []);
 
   useEffect(() => {
     if (!isEdit) return;
-    api.get(`/mesocycles/${id}`).then((res) => {
-      const m = res.data;
-      setName(m.name);
-      selectSplit(m.splitType);
-      setWeeks(m.weeks);
-      setNotes(m.notes || '');
-      setWeekTemplate(m.weekTemplate);
-      setStep(2);
-    });
+    api.get(`/mesocycles/${id}`)
+      .then((res) => {
+        const m = res.data;
+        setName(m.name);
+        setSplitType(m.splitType);
+        setWeeks(m.weeks);
+        setNotes(m.notes || '');
+        setWeekTemplate(addClientIds(m.weekTemplate ?? []));
+        setStep(2);
+      })
+      .catch(() => setError('Failed to load mesocycle'));
   }, [id]);
 
   function handleDragStart(event) {
@@ -92,20 +106,19 @@ export default function MesocycleBuilder() {
       return;
     }
 
-    // Reordering within a day column
-    if (active.id.toString().startsWith('sortable-') && over.id.toString().startsWith('sortable-')) {
-      const [, activeDayStr, activeIdxStr] = active.id.toString().split('-');
-      const [, overDayStr] = over.id.toString().split('-');
+    // Reordering within a day column — detect by data.dayIndex set in useSortable
+    if (active.data.current?.dayIndex !== undefined && over.data.current?.dayIndex !== undefined) {
+      const activeDayIndex = active.data.current.dayIndex;
+      const overDayIndex = over.data.current.dayIndex;
 
-      if (activeDayStr === overDayStr) {
-        const dayIndex = parseInt(activeDayStr);
-        const day = weekTemplate.find((d) => d.dayIndex === dayIndex);
+      if (activeDayIndex === overDayIndex) {
+        const day = weekTemplate.find((d) => d.dayIndex === activeDayIndex);
         if (!day) return;
 
-        const activeIdx = parseInt(activeIdxStr);
-        const overIdx = parseInt(over.id.toString().split('-')[2]);
-        if (activeIdx !== overIdx) {
-          reorderExercises(dayIndex, arrayMove(day.exercises, activeIdx, overIdx));
+        const activeIdx = day.exercises.findIndex((ex) => ex._clientId === active.id);
+        const overIdx = day.exercises.findIndex((ex) => ex._clientId === over.id);
+        if (activeIdx !== -1 && overIdx !== -1 && activeIdx !== overIdx) {
+          reorderExercises(activeDayIndex, arrayMove(day.exercises, activeIdx, overIdx));
         }
       }
     }

@@ -74,7 +74,15 @@ export function useMesocycleBuilder(initial = null) {
               ...day,
               exercises: [
                 ...day.exercises,
-                { exercise, sets: 3, reps: '8-12', rpe: null, notes: '', order: day.exercises.length },
+                {
+                  exercise,
+                  sets: 3,
+                  reps: '8-12',
+                  rpe: null,
+                  notes: '',
+                  order: day.exercises.length,
+                  _clientId: crypto.randomUUID(),
+                },
               ],
             }
           : day
@@ -115,7 +123,7 @@ export function useMesocycleBuilder(initial = null) {
     setWeekTemplate((prev) =>
       prev.map((day) =>
         day.dayIndex === dayIndex
-          ? { ...day, isRestDay: !day.isRestDay, exercises: day.isRestDay ? [] : [] }
+          ? { ...day, isRestDay: !day.isRestDay, exercises: day.isRestDay ? day.exercises : [] }
           : day
       )
     );
@@ -135,13 +143,14 @@ export function useMesocycleBuilder(initial = null) {
         rpe: ex.rpe,
         notes: ex.notes,
         order: i,
+        // _clientId is client-only — intentionally excluded from server payload
       })),
     })),
   }), [name, splitType, weeks, notes, weekTemplate]);
 
   return {
     name, setName,
-    splitType, selectSplit,
+    splitType, setSplitType, selectSplit,
     weeks, setWeeks,
     weekTemplate, setWeekTemplate,
     notes, setNotes,

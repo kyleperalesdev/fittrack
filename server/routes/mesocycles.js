@@ -47,10 +47,17 @@ router.put('/:id', async (req, res, next) => {
     const meso = await Mesocycle.findOne({ _id: req.params.id, user: req.user._id });
     if (!meso) return res.status(404).json({ message: 'Mesocycle not found' });
 
-    const allowed = ['name', 'splitType', 'weeks', 'weekTemplate', 'startDate', 'status', 'notes'];
+    const allowed = ['name', 'splitType', 'weeks', 'weekTemplate', 'startDate', 'notes'];
     allowed.forEach((field) => {
       if (req.body[field] !== undefined) meso[field] = req.body[field];
     });
+    if (req.body.status !== undefined) {
+      const validStatuses = ['planned', 'active', 'completed'];
+      if (!validStatuses.includes(req.body.status)) {
+        return res.status(400).json({ message: 'status must be planned, active, or completed' });
+      }
+      meso.status = req.body.status;
+    }
 
     await meso.save();
     await meso.populate('weekTemplate.exercises.exercise');

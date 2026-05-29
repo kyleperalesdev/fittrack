@@ -2,20 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../api/axios';
-
-const STATUS_COLORS = {
-  planned: 'bg-blue-900/50 text-blue-300 border-blue-700',
-  active: 'bg-brand-900/50 text-brand-300 border-brand-700',
-  completed: 'bg-gray-700/50 text-gray-400 border-gray-600',
-};
-
-const SPLIT_LABELS = {
-  PPL: 'Push / Pull / Legs',
-  UpperLower: 'Upper / Lower',
-  FullBody: 'Full Body',
-  BroSplit: 'Bro Split',
-  Custom: 'Custom',
-};
+import { STATUS_COLORS, SPLIT_LABELS } from '../utils/mesocycleConstants';
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -23,10 +10,10 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    api.get('/mesocycles').then((res) => {
-      setMesocycles(res.data);
-      setLoading(false);
-    });
+    api.get('/mesocycles')
+      .then((res) => setMesocycles(res.data))
+      .catch(() => {})
+      .finally(() => setLoading(false));
   }, []);
 
   const active = mesocycles.find((m) => m.status === 'active');

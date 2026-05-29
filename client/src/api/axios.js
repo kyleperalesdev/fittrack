@@ -11,7 +11,9 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (res) => res,
   (err) => {
-    if (err.response?.status === 401) {
+    // Only redirect on 401 when a session token already exists — avoids
+    // swallowing the "Invalid credentials" error on the login form itself.
+    if (err.response?.status === 401 && localStorage.getItem('token')) {
       localStorage.removeItem('token');
       window.location.href = '/login';
     }

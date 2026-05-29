@@ -17,7 +17,7 @@ const MUSCLE_COLORS = {
 };
 
 function SortableExercise({ id, exercise, dayIndex, exIdx, onRemove, onUpdate }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id, data: { dayIndex } });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -89,10 +89,10 @@ function SortableExercise({ id, exercise, dayIndex, exIdx, onRemove, onUpdate })
 export default function DayColumn({ day, onRemoveExercise, onUpdateExercise, onToggleRest }) {
   const { setNodeRef, isOver } = useDroppable({ id: `day-${day.dayIndex}` });
 
-  const sortableIds = day.exercises.map((_, i) => `sortable-${day.dayIndex}-${i}`);
+  const sortableIds = day.exercises.map((ex) => ex._clientId);
 
   return (
-    <div className="flex flex-col min-w-[160px] max-w-[200px] w-full">
+    <div className="flex flex-col min-w-[220px] max-w-[280px] w-full">
       {/* Day header */}
       <div className="flex items-center justify-between mb-2">
         <div>
@@ -131,8 +131,8 @@ export default function DayColumn({ day, onRemoveExercise, onUpdateExercise, onT
           <SortableContext items={sortableIds} strategy={verticalListSortingStrategy}>
             {day.exercises.map((ex, i) => (
               <SortableExercise
-                key={`sortable-${day.dayIndex}-${i}`}
-                id={`sortable-${day.dayIndex}-${i}`}
+                key={ex._clientId}
+                id={ex._clientId}
                 exercise={ex}
                 dayIndex={day.dayIndex}
                 exIdx={i}
